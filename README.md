@@ -25,7 +25,8 @@ Ezycrowd is an AI-driven smart crowd detection and management system that levera
 
 ## 📸 Screenshots
 
-*(Add your dashboard screenshot here)*
+<img width="1895" height="810" alt="image" src="https://github.com/user-attachments/assets/d581e05b-93d2-4f30-81d9-431ee9b89418" />
+
 
 ---
 
