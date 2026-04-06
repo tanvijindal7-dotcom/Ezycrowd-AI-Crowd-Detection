@@ -5,6 +5,7 @@ Configures CORS, mounts all routers, and exposes health + root endpoints.
 
 import logging
 import os
+from detector import detect_people
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
