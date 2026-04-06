@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Ezycrowd Dashboard"
+version = "1.0.0"
+id = "artifacts/ezycrowd"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 24884
+
+[services.development]
+run = "pnpm --filter @workspace/ezycrowd run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/ezycrowd", "run", "build" ]
+publicDir = "artifacts/ezycrowd/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24884"
+BASE_PATH = "/"

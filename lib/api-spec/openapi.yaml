@@ -3,13 +3,19 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Ezycrowd AI crowd detection API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: detect
+    description: Crowd detection operations
+  - name: alerts
+    description: Alert management
+  - name: sessions
+    description: Detection session history
 paths:
   /healthz:
     get:
@@ -24,6 +30,160 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /detect:
+    post:
+      operationId: detectCrowd
+      tags: [detect]
+      summary: Detect crowd in uploaded image or video frame
+      description: Upload an image or video file; returns people count, bounding boxes, and alert status
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Image or video file to analyze
+                threshold:
+                  type: integer
+                  description: People count threshold for alert (default 10)
+                  default: 10
+      responses:
+        "200":
+          description: Detection result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DetectionResult"
+        "400":
+          description: Invalid file type or missing file
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Detection processing error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /detect/threshold:
+    get:
+      operationId: getThreshold
+      tags: [detect]
+      summary: Get current alert threshold
+      responses:
+        "200":
+          description: Current threshold value
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ThresholdConfig"
+    put:
+      operationId: updateThreshold
+      tags: [detect]
+      summary: Update alert threshold
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ThresholdConfig"
+      responses:
+        "200":
+          description: Updated threshold
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ThresholdConfig"
+
+  /sessions:
+    get:
+      operationId: listSessions
+      tags: [sessions]
+      summary: List recent detection sessions
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: alert_only
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: List of detection sessions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionList"
+
+  /sessions/{sessionId}:
+    get:
+      operationId: getSession
+      tags: [sessions]
+      summary: Get a specific detection session
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Detection session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Session"
+        "404":
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /alerts:
+    get:
+      operationId: listAlerts
+      tags: [alerts]
+      summary: List all triggered alerts
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: List of alerts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AlertList"
+
+  /stats/summary:
+    get:
+      operationId: getStatsSummary
+      tags: [detect]
+      summary: Get crowd detection statistics summary
+      responses:
+        "200":
+          description: Statistics summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatsSummary"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +194,156 @@ components:
       required:
         - status
 
+    DetectionResult:
+      type: object
+      required:
+        - sessionId
+        - peopleCount
+        - alertTriggered
+        - threshold
+        - confidence
+        - processingTimeMs
+        - timestamp
+      properties:
+        sessionId:
+          type: string
+        peopleCount:
+          type: integer
+          description: Number of people detected
+        alertTriggered:
+          type: boolean
+          description: Whether people count exceeded threshold
+        threshold:
+          type: integer
+          description: Alert threshold used for this detection
+        confidence:
+          type: number
+          format: float
+          description: Average detection confidence (0.0-1.0)
+        processingTimeMs:
+          type: number
+          format: float
+          description: Time taken to process the file in milliseconds
+        timestamp:
+          type: string
+          format: date-time
+        imageUrl:
+          type: string
+          description: URL to annotated result image (if available)
+        detections:
+          type: array
+          items:
+            $ref: "#/components/schemas/Detection"
+
+    Detection:
+      type: object
+      required: [x, y, width, height, confidence]
+      properties:
+        x:
+          type: number
+        y:
+          type: number
+        width:
+          type: number
+        height:
+          type: number
+        confidence:
+          type: number
+
+    ThresholdConfig:
+      type: object
+      required: [threshold]
+      properties:
+        threshold:
+          type: integer
+          minimum: 1
+          description: Number of people that triggers an alert
+
+    Session:
+      type: object
+      required: [id, peopleCount, alertTriggered, threshold, confidence, processingTimeMs, createdAt]
+      properties:
+        id:
+          type: string
+        peopleCount:
+          type: integer
+        alertTriggered:
+          type: boolean
+        threshold:
+          type: integer
+        confidence:
+          type: number
+        processingTimeMs:
+          type: number
+        createdAt:
+          type: string
+          format: date-time
+        fileName:
+          type: string
+
+    SessionList:
+      type: object
+      required: [sessions, total]
+      properties:
+        sessions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Session"
+        total:
+          type: integer
+
+    Alert:
+      type: object
+      required: [id, sessionId, peopleCount, threshold, createdAt]
+      properties:
+        id:
+          type: string
+        sessionId:
+          type: string
+        peopleCount:
+          type: integer
+        threshold:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+
+    AlertList:
+      type: object
+      required: [alerts, total]
+      properties:
+        alerts:
+          type: array
+          items:
+            $ref: "#/components/schemas/Alert"
+        total:
+          type: integer
+
+    StatsSummary:
+      type: object
+      required: [totalSessions, totalAlerts, averagePeopleCount, maxPeopleCount, alertRate]
+      properties:
+        totalSessions:
+          type: integer
+        totalAlerts:
+          type: integer
+        averagePeopleCount:
+          type: number
+        maxPeopleCount:
+          type: integer
+        alertRate:
+          type: number
+          description: Percentage of sessions that triggered alerts (0.0-1.0)
+        recentSessions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Session"
+
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+        details:
+          type: string

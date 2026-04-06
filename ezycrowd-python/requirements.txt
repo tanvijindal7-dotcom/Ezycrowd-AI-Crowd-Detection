@@ -1,0 +1,26 @@
+# Ezycrowd Python Backend Dependencies
+# Install with: pip install -r requirements.txt
+
+# ── Web framework ────────────────────────────────────────────────────────────
+fastapi==0.115.6          # Modern async Python web framework
+uvicorn[standard]==0.32.1 # ASGI server with WebSocket support
+python-multipart==0.0.20  # Required for file upload (multipart/form-data) parsing
+
+# ── AI / Computer Vision ─────────────────────────────────────────────────────
+ultralytics==8.3.56       # YOLOv8 — includes model download on first run
+opencv-python-headless==4.10.0.84  # OpenCV without GUI (server-safe)
+Pillow==11.0.0            # Image I/O utilities used by ultralytics
+
+# ── Data / Numerics ──────────────────────────────────────────────────────────
+numpy==1.26.4             # Required by both OpenCV and ultralytics
+
+# ── Validation ───────────────────────────────────────────────────────────────
+pydantic==2.10.4          # Data validation (used by FastAPI automatically)
+
+# ── HTTP client (used by Uvicorn's websocket extras) ─────────────────────────
+httpx==0.28.1             # Optional but recommended for health checks / testing
+
+# ── Dev/Test ─────────────────────────────────────────────────────────────────
+pytest==8.3.4             # Testing framework
+pytest-asyncio==0.24.0    # Async test support
+httpx==0.28.1             # Test client for FastAPI
